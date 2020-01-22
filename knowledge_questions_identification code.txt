@@ -1,0 +1,90 @@
+import nltk
+from nltk import word_tokenize,sent_tokenize
+# knowledge_question = "How to raise a service ticket"
+
+#non_knowledge question = "What is status of my service ticket no: 123"
+#failed_case= "How to know the status of my ticket"
+#failed_case= "How to raise a ticket for an incident"
+
+questions = ["How to raise an incident?", "How to raise a service ticket", 
+             "How to know the status of my ticket", "How to raise a ticket for an incident"]
+
+#Setup keywords
+q_words = ["who","what","where", "how"]
+q_symbols = ["?"]
+non_knowledge_words = ["service request","incident","status update"]
+
+
+def tokenize(input):
+    tokens = nltk.word_tokenize(input)
+    token_list =[]
+    for token in tokens:
+        token_list.append(token)
+    
+    print (token_list)
+    return token_list
+
+def identifyKnowledgeQuestion(tokens):
+    flag = False
+
+    if (tokens[0].lower() in q_words) and (tokens[-1] in q_symbols):
+        flag = True
+
+    return flag
+
+#Pre-processing2:Cleaning the input text
+def cleanupText(text):
+    text = re.sub('(\.\ ?){2,}', ' ', text)
+    text = re.sub('\n', ' ', text)
+    text = re.sub('\ {2,}', ' ', text)
+
+    return text
+
+#NLP Based Text processing1:Tokenization and Parts of speech Tagger
+def tagText(text):
+    sents = [word_tokenize(s) for s in sent_tokenize(text)]
+
+    taggedSents = pos_tag_sents(sents)
+
+    return taggedSents
+
+#NLP Based Text processing2:NP Chunking for identification of concepts
+
+def neChunk(sents):
+    newSents = []
+    for sent in sents:
+        newSent = []
+        for i in ne_chunk(sent):
+            if (type(i) == Tree):
+                entity_name = ' '.join([c[0] for c in i.leaves()])
+            else:
+                entity_name = i[0]
+            newSent.append(entity_name)
+
+    newSents.append(newSent)
+
+
+def chunk(sentence):
+    chunkToExtract = """
+    NP: {<NNP>*}
+		{<DT>?<JJ>?<NNS>}
+		{<NN><NN>}"""
+    parser = nltk.RegexpParser(chunkToExtract)
+    result = parser.parse(sentence)
+    sent = []
+    for subtree in result.subtrees():
+        if subtree.label() == 'NP':
+            t = subtree
+            t = ' '.join(word for word, pos in t.leaves())
+            sent.append(t)
+
+
+for input in questions:
+    tokens = tokenize(input)
+    
+    result = identifyKnowledgeQuestion(tokens)
+    
+    if (result):
+        print (input + ": is a Knowledge Question")
+    else:
+        print (input + ": is not  a Knowledge Question")
